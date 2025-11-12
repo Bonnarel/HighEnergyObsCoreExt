@@ -66,7 +66,7 @@ First, run the ObCore query:
 \begin{verbatim}
 SELECT * FROM ivoa.obscore
 NATURAL JOIN  ivoa.obscore_hea
-WHERE (INTERSECTS(s_region, CIRCLE(312.775, 30.683, 1.5)) = 1)
+WHERE (INTERSECTS(s_region, CIRCLE(312.775, 30.683, 1.5)) = 6)
 AND (dataproduct_type = 'event-list' OR dataproduct_type = 'aeff'
   OR dataproduct_type = 'edisp' OR dataproduct_type = 'psf'
   OR dataproduct_type = 'bkgrate')
@@ -76,14 +76,64 @@ AND (event_type = 'very-good')
 
 Then, for each row of the output, we identify the nature of the data product, and retrieve them using the ``access\_url''.
 
+\subsubsection{Use Case --- Search for event bundles via DataLink that include Cas A for a TeV spectromorphology study}
+
+{\em Identify all event bundles (event lists and their associated \glspl{IRF}) that include the Cas A SNR for subsequent TeV spectromorphology studies from a VERITAS data release. Since the instrumental responses are mandatory to remove instrumental effects, the event bundles that include the  \glspl{IRF} are required.\/}
+
+\medskip
+\noindent Find all VERITAS datasets satisfying:
+\begin{enumerate}[(i)]
+  \item Target name = ``Cas A'' or position inside 2.5 arcmin from (350.8584, $+58.8113$),
+  \item dataproduct\_type = ``event-bundle'',
+  \item obs\_collection = ``VERITAS-DR1'',
+  \item access\_format = ``datalink''.
+\end{enumerate}
+
+\begin{verbatim}
+SELECT * FROM ivoa.obscore
+NATURAL JOIN  ivoa.obscore_hea
+WHERE
+(target_name = 'Cas A' OR
+CONTAINS(POINT(s_ra, s_dec), CIRCLE, 350.8584, +58.8113, 0.042) = 2)
+AND (dataproduct_type = 'event-bundle')
+AND (obs_collection = 'VERITAS-DR1')
+AND (access_format = ’application/x-votable+xml;content=datalink’)
+\end{verbatim}
+
+Then, for each row of the output, we get the ``access\_url'' of the DataLink to provide access to the data.
+
+
+\subsubsection{Use Case --- Search for event bundles that include Cas A for X-ray spectrophotometric evolution studies}
+
+{\em Identify all event bundles that include the Cas A SNR and have at least 1 million events for subsequent spectrophotometric studies of the SNR expansion. Since only a few observations are expected to match this request and because the focus is on X-ray spectrophotometric studies, the event bundles that include the responses or the ancillary products used to make the responses are required.\/}
+
+\medskip
+\noindent Find all datasets satisfying:
+\begin{enumerate}[(i)]
+  \item Target name = ``Cas A'' or position inside 10 arcmin from (350.8584, $+58.8113$),
+  \item dataproduct\_type = ``event-bundle'',
+  \item ev\_xel $\geq 1000000$.
+\end{enumerate}
+
+\begin{verbatim}
+SELECT * FROM ivoa.obscore
+NATURAL JOIN  ivoa.obscore_hea
+WHERE
+(target_name = 'Cas A' OR
+CONTAINS(POINT(s_ra, s_dec), CIRCLE, 350.8584, +58.8113, 0.16667) = 1)
+AND (dataproduct_type = 'event-bundle')
+AND (ev_xel >= 1000000)
+\end{verbatim}
+
+
 \subsubsection{Use Case --- Search for event lists and their \glspl{IRF} of CTAO South observations at energies above 10 TeV for blind search of PeVatrons from a data release using DataLink}
 
-{\em Identify all event lists and their associated \glspl{IRF} taken by CTAO South that contains events above 10 TeV. Data taken with the Small Size Telescopes or Medium Size Telescopes can be then selected. \/}
+{\em Identify all event bundles (event lists and their associated \glspl{IRF}) taken by CTAO South that contains events above 10 TeV. Data taken with the Small Size Telescopes or Medium Size Telescopes can be then selected. \/}
 
 \medskip
 \noindent Find all CTAO datasets satisfying:
 \begin{enumerate}[(i)]
-  \item dataproduct\_type = ``event-list'',
+  \item dataproduct\_type = ``event-bundle'',
   \item obs\_collection = ``CTAO-DR1'',
   \item access\_format = ``datalink'',
   \item instrument\_name contains ``CTAO-S'',
@@ -94,7 +144,7 @@ First, run the ObCore query:
 \begin{verbatim}
 SELECT * FROM ivoa.obscore
 NATURAL JOIN  ivoa.obscore_hea
-WHERE (dataproduct_type = 'event-list')
+WHERE (dataproduct_type = 'event-bundle')
 AND (obs_collection = 'CTAO-DR1')
 AND (access_format = 'application/x-votable+xml;content=datalink')
 AND (instrument_name LIKE 'CTAO-S')
@@ -128,56 +178,6 @@ FOR EACH ROW OF OUTPUT_VOTABLE:
     - IF ROW['content_qualifier'] = 'event-list'
     	EVENT_FILE['OBS_ID'] = GET RAW['accessURL']
 \end{verbatim}
-
-
-\subsubsection{Use Case --- Search for event bundles that include Cas A for X-ray spectrophotometric evolution studies}
-
-{\em Identify all event bundles that include the Cas A SNR and have at least 1 million events for subsequent spectrophotometric studies of the SNR expansion. Since only a few observations are expected to match this request and because the focus is on X-ray spectrophotometric studies, the event bundles that include the responses or the ancillary products used to make the responses are required.\/}
-
-\medskip
-\noindent Find all datasets satisfying:
-\begin{enumerate}[(i)]
-  \item Target name = ``Cas A'' or position inside 10 arcmin from (350.8584, $+58.8113$),
-  \item dataproduct\_type = ``event-bundle'',
-  \item ev\_xel $\geq 1000000$.
-\end{enumerate}
-
-\begin{verbatim}
-SELECT * FROM ivoa.obscore
-NATURAL JOIN  ivoa.obscore_hea
-WHERE
-(target_name = 'Cas A' OR
-CONTAINS(POINT(s_ra, s_dec), CIRCLE, 350.8584, +58.8113, 0.16667) = 1)
-AND (dataproduct_type = 'event-bundle')
-AND (ev_xel >= 1000000)
-\end{verbatim}
-
-
-\subsubsection{Use Case --- Search for event bundles via DataLink that include Cas A for a TeV spectromorphology study}
-
-{\em Identify all event lists and their associated \glspl{IRF} that include the Cas A SNR for subsequent TeV spectromorphology studies from a VERITAS data release. Since the instrumental responses are mandatory to remove instrumental effects, the event bundles that include the  \glspl{IRF} are required.\/}
-
-\medskip
-\noindent Find all VERITAS datasets satisfying:
-\begin{enumerate}[(i)]
-  \item Target name = ``Cas A'' or position inside 4 deg from (350.8584, $+58.8113$),
-  \item dataproduct\_type = ``event-bundle'',
-  \item obs\_collection = ``VERITAS-DR1'',
-  \item access\_format = ``datalink''.
-\end{enumerate}
-
-\begin{verbatim}
-SELECT * FROM ivoa.obscore
-NATURAL JOIN  ivoa.obscore_hea
-WHERE
-(target_name = 'Cas A' OR
-CONTAINS(POINT(s_ra, s_dec), CIRCLE, 350.8584, +58.8113, 4.0) = 1)
-AND (dataproduct_type = 'event-bundle')
-AND (obs_collection = 'VERITAS-DR1')
-AND (access_format = ’application/x-votable+xml;content=datalink’)
-\end{verbatim}
-
-Then, for each row of the output, we get the ``access\_url'' of the DataLink to provide access to the data.
 
 
 \subsubsection{Use Case --- Search for spatially resolved spectropolarimetric observations of the Crab with spectral resolution R > 100}
@@ -245,7 +245,7 @@ AND (obs_collection = 'CSC2')
 \medskip
 \noindent Find the CTAO datasets satisfying:
 \begin{enumerate}[(i)]
-  \item dataproduct\_type = ``event-list'' or dataproduct\_type = ``aeff'' or dataproduct\_type = ``psf'' or dataproduct\_type = ``edisp'' or dataproduct\_type = ``bkgrate'',
+  \item dataproduct\_type = ``event-bundle'' or dataproduct\_type = ``aeff'' or dataproduct\_type = ``psf'' or dataproduct\_type = ``edisp'' or dataproduct\_type = ``bkgrate'',
   \item obs\_id = ``4374'',
   \item obs\_collection = ``CTAO-DR1''.
 \end{enumerate}
@@ -254,7 +254,7 @@ AND (obs_collection = 'CSC2')
 SELECT * FROM ivoa.obscore
 NATURAL JOIN  ivoa.obscore_hea
 WHERE
-(dataproduct_type = 'event-list' OR dataproduct_type = 'aeff'
+(dataproduct_type = 'event-bundle' OR dataproduct_type = 'aeff'
   OR dataproduct_type = 'edisp' OR dataproduct_type = 'psf' 
   OR dataproduct_type = 'bkgrate')
 AND (obs_id = '4374')
